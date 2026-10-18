@@ -1,0 +1,52 @@
+{
+  "dataset": "shipments",
+  "generated_at": "2026-10-18T09:54:07.353891+00:00",
+  "passed": false,
+  "checks": {
+    "required_columns": {
+      "passed": false,
+      "details": {
+        "required": [
+          "shipment_id",
+          "port_of_loading",
+          "port_of_discharge",
+          "booking_time"
+        ],
+        "columns": [
+          "shipment_id",
+          "customer_id",
+          "origin_port",
+          "destination_port",
+          "vessel_id",
+          "booking_date",
+          "planned_departure",
+          "actual_departure",
+          "planned_arrival",
+          "actual_arrival",
+          "container_count",
+          "cargo_type",
+          "weight_tons",
+          "status"
+        ]
+      }
+    },
+    "no_nulls": {
+      "passed": false,
+      "details": {
+        "null_rows": 437
+      }
+    },
+    "no_duplicates": {
+      "passed": false,
+      "details": {
+        "duplicate_rows": 28
+      }
+    },
+    "minimum_rows": {
+      "passed": true,
+      "details": {
+        "row_count": 5028
+      }
+    }
+  }
+}

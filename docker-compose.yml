@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: supply-chain-platform
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      LLM_PROVIDER: ollama
+      LLM_API_KEY: ollama
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: qwen2.5:3b
+      LLM_MODEL: qwen2.5:3b
+      APP_ENV: development
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: bash scripts/entrypoint.sh
+
+  frontend:
+    image: node:20-alpine
+    container_name: supply-chain-platform-frontend
+    working_dir: /app/frontend
+    depends_on:
+      - app
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE: http://localhost:8000
+    volumes:
+      - .:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
