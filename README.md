@@ -1,44 +1,53 @@
 # Supply Chain Platform
 
-A lightweight supply-chain analytics platform for shipment monitoring, route analysis, data-quality reporting, forecasted delay risk, and natural-language queries over the curated data set.
+A local-first supply-chain analytics platform for shipment monitoring, route analysis, data-quality reporting, ML-based delay prediction, and natural-language querying over curated logistics data.
 
 ## Overview
 
-The application combines a FastAPI backend, DuckDB-backed data pipeline, a booking-time delay prediction model, and a tool-calling assistant that talks to a local Ollama model. The system is designed to answer questions such as:
+This project combines:
 
-- Which routes have the highest average delay?
-- What is the on-time performance for a route?
-- Which shipments are delayed or at risk?
-- What does the current data-quality status look like?
+- A FastAPI backend for shipment, route, quality, and prediction APIs
+- A DuckDB-backed ingestion pipeline for curated logistics data
+- A booking-time delay prediction model trained on real freight records
+- A local LLM assistant powered by Ollama that can query project data instead of guessing
+- A React + Vite frontend for operational dashboards and quick inspection
 
-The platform is intentionally local-first and does not depend on OpenAI or any external API key. The assistant uses local Ollama and the project tool registry to invoke real data queries instead of guessing from memory.
+The platform is designed to answer questions such as:
 
-## Features
+- Which routes have the highest delay risk?
+- What is the on-time performance by port or route?
+- Which shipments are currently delayed or likely to be delayed?
+- What is the current data-quality status across the dataset?
 
-- Shipment, port, and port-event data ingestion and querying
-- Route summary and delay analysis over curated data
-- Data-quality validation and reporting
-- Delay prediction using a booking-time model
-- Local LLM assistant with tool calling and audit logging
-- FastAPI endpoints for operational and ML workflows
-- Dockerized deployment for local setups
+This is intentionally a local-first solution. It does not depend on external SaaS APIs for its active runtime path and can run fully on a developer machine with local dependencies.
+
+## Key Features
+
+- Shipment, port, and port-event ingestion and querying
+- Route and delay analysis over curated shipping data
+- Data-quality checks and reports for missing values, duplicates, and schema issues
+- Booking-time delay prediction using a trained ML model
+- Assistant tooling for natural-language access to the data model
+- FastAPI endpoints for operational and diagnostic workflows
+- Docker support for local containerized development
+- A Vite/React frontend served on a separate port
 
 ## Architecture
 
-The platform is structured into these runtime layers:
+The platform is structured around several runtime layers:
 
 1. API layer
    - FastAPI routes expose health, shipment, route, prediction, and assistant endpoints.
 2. Data-quality layer
-   - CSV validation and reporting identify nulls, duplicates, required columns, and schema issues.
+   - Validation and reporting identify nulls, duplicates, required columns, and other quality issues.
 3. Pipeline layer
-   - Raw data is transformed and ingested into DuckDB as curated tables.
+   - Raw CSV data is processed and loaded into DuckDB-backed curated tables.
 4. ML layer
-   - Booking-time features feed a delay model for risk scoring and evaluation.
+   - Booking-time features feed a delay model and evaluation pipeline.
 5. Assistant layer
-   - A tool-calling wrapper sends requests to Ollama and executes dataset queries before composing the answer.
+   - The local LLM wrapper calls project tooling and executes dataset queries before answering.
 
-## Project structure
+## Repository Layout
 
 ```text
 supply-chain-platform/
@@ -48,76 +57,64 @@ supply-chain-platform/
 ├── Makefile
 ├── pyproject.toml
 ├── requirements.txt
-├── .env
 ├── .env.example
 ├── data/
 │   ├── raw/
 │   ├── curated/
 │   └── quarantine/
 ├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── ASSUMPTIONS.md
+│   ├── DATA_MODEL.md
+│   ├── DQ_DECISIONS.md
+│   └── ML_REPORT.md
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
 ├── logs/
 ├── models/
 ├── reports/
 ├── scripts/
+│   ├── assistant.cmd
+│   ├── assistant.ps1
+│   └── entrypoint.sh
 ├── src/
+│   ├── api/
+│   ├── assistant/
+│   ├── common/
+│   ├── dq/
+│   ├── ml/
+│   ├── pipeline/
+│   └── __init__.py
 ├── tests/
+│   ├── integration/
+│   ├── unit/
+│   └── conftest.py
 ├── ui/
-└── frontend/
+└── .env
 ```
 
 ## Prerequisites
 
+Before running the platform, install the following:
+
 - Python 3.11+
+- Node.js 20+
+- npm
 - Ollama installed locally
-- An Ollama model available, for example `qwen2.5:3b` or `qwen2.5:7b-instruct`
-- Docker and Docker Compose (optional for containerized runs)
+- A local Ollama model, such as `qwen2.5:3b` or `qwen2.5:7b-instruct`
+- Docker Desktop + Docker Compose if you want to run the project in containers
 
-## Local setup
+## Environment Configuration
 
-1. Start Ollama.
-2. Pull a model:
-
-```bash
-ollama pull qwen2.5:3b
-```
-
-Or use the larger instruct variant if you prefer:
-
-```bash
-ollama pull qwen2.5:7b-instruct
-```
-
-3. Create the environment file, or copy the sample:
+Create a local environment file from the sample:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Install Python dependencies:
-
-```bash
-python -m venv .venv
-# Linux/macOS
-source .venv/bin/activate
-# Windows PowerShell
-# .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-5. Run the backend:
-
-```bash
-make run
-```
-
-The API will be available at:
-
-- http://localhost:8000
-- Health check: http://localhost:8000/health
-
-## Assistant setup
-
-The assistant expects the Ollama provider and a local model:
+The default environment variables look like this:
 
 ```env
 LLM_PROVIDER=ollama
@@ -125,83 +122,234 @@ LLM_API_KEY=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b
 LLM_MODEL=qwen2.5:3b
+APP_ENV=development
 ```
 
-The project intentionally does not use OpenAI or OpenAPI endpoints for the active runtime path.
+If you are running the services in Docker Compose, use `host.docker.internal` instead of `localhost` for the Ollama base URL inside the container. The compose file is set up for that pattern.
 
-To ask the assistant a question from the CLI:
+## Local Setup
+
+### 1) Start Ollama and pull a model
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+You can also use the larger instruct variant:
+
+```bash
+ollama pull qwen2.5:7b-instruct
+```
+
+### 2) Create a virtual environment and install Python dependencies
+
+```bash
+python -m venv .venv
+```
+
+On macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Then install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3) Install frontend dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+## Run the Backend
+
+The project includes a Makefile for common developer tasks.
+
+```bash
+make run
+```
+
+This starts the FastAPI app with Uvicorn on:
+
+- http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+You can also start it directly:
+
+```bash
+python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+## Run the Frontend
+
+From the project root:
+
+```bash
+cd frontend
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+The frontend expects the backend to be available at the default API location the project config uses.
+
+## Run the Full Stack with Docker Compose
+
+From the project root:
+
+```bash
+docker compose up --build
+```
+
+This starts both services:
+
+- Backend: http://localhost:8000
+- Frontend: http://localhost:5173
+
+### Docker notes
+
+- Docker Desktop must be running before `docker compose` works.
+- The compose file includes a frontend service and wires it to the app container.
+- For host-based Ollama, the compose environment uses `http://host.docker.internal:11434` so the app container can connect to the host machine.
+- If Docker is not installed or the daemon is not running, Compose will fail with a Docker API connection error.
+
+## Useful Project Commands
+
+These commands are defined in the Makefile:
+
+```bash
+make run
+make dq
+make ingest
+make train
+make test
+make lint
+make assistant
+```
+
+### Data quality
+
+```bash
+make dq
+```
+
+### Load raw data into DuckDB
+
+```bash
+make ingest
+```
+
+### Train the delay model
+
+```bash
+make train
+```
+
+### Run tests
+
+```bash
+make test
+```
+
+### Lint the codebase
+
+```bash
+make lint
+```
+
+### Start the interactive assistant shell
+
+```bash
+make assistant
+```
+
+## Assistant Usage
+
+The project includes a local assistant CLI that calls tools against the platform data and can answer operational questions using a local LLM.
+
+From the project root:
 
 ```bash
 python -m src.assistant.cli --query "Which route has the highest average delay this quarter?"
 ```
 
-Or use the interactive shell:
+Interactive mode:
 
 ```bash
 python -m src.assistant.cli --interactive
 ```
 
-Windows PowerShell wrappers are also included:
+PowerShell wrappers are also included:
 
 ```powershell
 ./scripts/assistant.cmd --query "Which route has the highest average delay this quarter?"
 ./scripts/assistant.cmd --interactive
 ```
 
-## Docker Compose
+## API Overview
 
-The project includes a Docker Compose file that builds and runs the FastAPI app container. The service starts the app on port 8000.
+The backend exposes these main areas:
 
-```bash
-docker compose up --build
-```
+- `/` - service greeting
+- `/health` - health/status information
+- `/shipments` - shipment queries
+- `/ports` - port metadata and summaries
+- `/port-events` - port event queries
+- `/routes` - route-level analytics
+- `/predict` - delay prediction endpoint
+- `/assistant` - LLM assistant interaction endpoints
+- `/dq` - data-quality endpoints
+- `/pipeline` - ingestion and pipeline actions
 
-Then open:
+The API also exposes Swagger/OpenAPI docs at:
 
-- http://localhost:8000
+- http://localhost:8000/docs
 
-Important note for Compose:
+## Data Model
 
-- Inside a container, `localhost` refers to the container itself, not the host machine.
-- For Docker Desktop or host-based Ollama installs, the app must reach the host via `host.docker.internal`.
-- The Compose file therefore sets the Ollama base URL to `http://host.docker.internal:11434` for the app container.
-- If you run the app directly on the host OS, keep `OLLAMA_BASE_URL=http://localhost:11434` instead.
+The platform relies on curated shipping data mainly from these entity sets:
 
-If Ollama is not running, or the model is missing, the assistant will fail with a clear error. Pull the model first:
+### Shipment
+- `shipment_id`
+- `booking_time`
+- `port_of_loading`
+- `port_of_discharge`
+- `cargo_type`
+- `vessel_name`
+- `delay_hours`
+- `shipment_status`
 
-```bash
-ollama pull qwen2.5:3b
-```
+### Port
+- `port_code`
+- `port_name`
+- `country`
+- `region`
 
-## Data model
+### Port Event
+- `event_id`
+- `port_code`
+- `event_time`
+- `event_type`
 
-The project is built around curated shipping data:
+## ML and Data Quality Workflow
 
-- Shipment
-  - shipment_id
-  - booking_time
-  - port_of_loading
-  - port_of_discharge
-  - cargo_type
-  - vessel_name
-  - delay_hours
-  - shipment_status
-- Port
-  - port_code
-  - port_name
-  - country
-  - region
-- Port event
-  - event_id
-  - port_code
-  - event_time
-  - event_type
-
-## Data-quality and ML workflows
-
-The project includes a data-quality stage and a route-delay prediction model.
-
-Common commands:
+The project includes both upstream data validation and downstream predictive analytics:
 
 ```bash
 make dq
@@ -210,14 +358,59 @@ make train
 make test
 ```
 
-The app also exposes endpoints for:
+The training pipeline loads real data, builds booking-time features, fits the delay model, evaluates thresholds, and writes artifacts into the `models/` directory. Data quality reports are generated in the `reports/` folder.
 
-- `/health`
-- `/shipments`
-- `/ports`
-- `/port-events`
-- `/routes`
-- `/predict`
+## Documentation
+
+Additional project docs live in the `docs/` directory:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md)
+- [docs/DATA_MODEL.md](docs/DATA_MODEL.md)
+- [docs/DQ_DECISIONS.md](docs/DQ_DECISIONS.md)
+- [docs/ML_REPORT.md](docs/ML_REPORT.md)
+
+## Troubleshooting
+
+### Ollama errors
+
+If the assistant or backend cannot connect to Ollama:
+
+```bash
+ollama ps
+ollama pull qwen2.5:3b
+```
+
+Verify the environment variable `OLLAMA_BASE_URL` matches your setup.
+
+### Docker connection errors
+
+If Compose fails with a Docker daemon connection error, start Docker Desktop and confirm the engine is running:
+
+```bash
+docker ps
+```
+
+### Frontend not loading
+
+Check that the Vite app is started in the frontend folder and that the backend is running on port 8000.
+
+## License
+
+This project is intended for local development and internal analytics workflows. Update or remove this section if you are preparing a production or distribution package.
+
+## Summary
+
+This repository is a working local analytics platform with:
+
+- Python backend
+- DuckDB data workflows
+- model training/evaluation
+- React frontend
+- local Ollama-based assistant
+- Docker Compose support
+
+It is ready for developer setup, experimentation, and local runs with the correct environment and dependencies installed.
 - `/predict-delay`
 - `/assistant/chat`
 - `/data-quality`

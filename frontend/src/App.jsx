@@ -61,8 +61,9 @@ const labelPort = (code, portMap = {}) => {
 function Logo() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" className="logo-mark">
-      <path d="M24 4 29 16 42 15 32 23 36 36 24 29 12 36 16 23 6 15 19 16Z" fill="currentColor" />
-      <circle cx="24" cy="22" r="4" fill="#ffffff" />
+      <rect x="4" y="4" width="40" height="40" rx="10" fill="currentColor" />
+      <path d="M14 34V15h4l8 16 8-16h4v19h-4V22l-8 16h-2L18 22v12h-4Z" fill="#ffffff" />
+      <path d="M20 12h8l-3.5 7h-1z" fill="#f59e0b" opacity="0.95" />
     </svg>
   )
 }
@@ -782,8 +783,8 @@ function App() {
         <button className="brand" type="button" onClick={() => setActivePage('predictor')}>
           <Logo />
           <span>
-            <strong>BlueCurrent</strong>
-            <small>Decision intelligence</small>
+            <strong>Maersk</strong>
+            <small>Supply chain intelligence</small>
           </span>
         </button>
         <nav className="top-nav" aria-label="Primary navigation">

@@ -13,3 +13,4 @@ google-genai>=1.0.0
 pytest==8.3.3
 ruff==0.6.9
 streamlit==1.38.0
+python-multipart==0.0.6

@@ -1,14 +1,15 @@
 :root {
-  --ink: #0e2235;
-  --muted: #64758b;
-  --line: #dce5ed;
+  --ink: #0d2338;
+  --muted: #60758a;
+  --line: #dfe7ee;
   --canvas: #f4f7fa;
   --panel: #ffffff;
-  --blue: #0a78d1;
-  --blue-deep: #075fa9;
-  --mint: #21a98b;
-  --coral: #e76c5b;
-  --navy: #0b304b;
+  --blue: #003a70;
+  --blue-deep: #002b52;
+  --mint: #1a9d8c;
+  --coral: #dd6b4d;
+  --navy: #061f38;
+  --maersk-gold: #f59e0b;
 }
 
 .app-shell { min-height: 100vh; background: var(--canvas); color: var(--ink); }
